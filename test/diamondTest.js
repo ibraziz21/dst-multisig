@@ -10,12 +10,14 @@ const {
 const { deployDiamond } = require('../scripts/deploy.js')
 
 const { assert } = require('chai')
+const { ethers } = require('hardhat')
 
 describe('DiamondTest', async function () {
   let diamondAddress
   let diamondCutFacet
   let diamondLoupeFacet
   let ownershipFacet
+  let multisigFacet
   let tx
   let receipt
   let result
@@ -26,14 +28,15 @@ describe('DiamondTest', async function () {
     diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
     diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
     ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)
+    multisigFacet = await ethers.getContractAt('multisigFacet',diamondAddress)
   })
 
-  it('should have three facets -- call to facetAddresses function', async () => {
+  it('should have 4 facets -- call to facetAddresses function', async () => {
     for (const address of await diamondLoupeFacet.facetAddresses()) {
       addresses.push(address)
     }
 
-    assert.equal(addresses.length, 3)
+    assert.equal(addresses.length, 4)
   })
 
   it('facets should have the right function selectors -- call to facetFunctionSelectors function', async () => {
