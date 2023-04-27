@@ -15,6 +15,15 @@ error InitializationFunctionReverted(address _initializationContractAddress, byt
 library LibDiamond {
     bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.standard.diamond.storage");
 
+    struct TxDetails {
+        address token;
+        uint amount;
+        address sender;
+        address approver;
+        address receiver;
+        bool txComplete;
+    }
+
     struct DiamondStorage {
         // maps function selectors to the facets that execute the functions.
         // and maps the selectors to their position in the selectorSlots array.
@@ -30,6 +39,12 @@ library LibDiamond {
         mapping(bytes4 => bool) supportedInterfaces;
         // owner of the contract
         address contractOwner;
+
+        address admin;
+        uint counter;
+        mapping(uint=>TxDetails) transactionDetails;
+        mapping (address => bool) acceptedTokens;
+        mapping(address => bool) owners;
     }
 
     function diamondStorage() internal pure returns (DiamondStorage storage ds) {
