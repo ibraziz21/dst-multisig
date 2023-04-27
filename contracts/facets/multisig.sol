@@ -29,7 +29,7 @@ contract multisigFacet {
     function depositFunds(uint amount) external {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         if(ds.token.balanceOf(msg.sender)< amount || ds.token.allowance(msg.sender,address(this))<amount) revert();
-        ds.token.transfer(address(this),amount);
+        ds.token.transferFrom(msg.sender,address(this),amount);
     }
 
     function initiateWithdrawal(
@@ -50,5 +50,21 @@ contract multisigFacet {
         LibDiamond.TxDetails storage txDetails = ds.transactionDetails[w_id];
         if (msg.sender == txDetails.sender) revert();
         txDetails.approver = msg.sender;
+        address recepient = txDetails.receiver;
+        uint amt = txDetails.amount;
+        ds.token.transfer(recepient,amt);
+        txDetails.txComplete;
+
     }
+    function checkTxProgress(uint id) external view returns(address _sender, address _receiver, uint _amount, bool _txProgress){
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        LibDiamond.TxDetails storage txDetails = ds.transactionDetails[id];
+        _sender = txDetails.sender;
+        _receiver = txDetails.receiver;
+        _amount = txDetails.amount;
+        _txProgress = txDetails.txComplete;
+        
+       // return (_sender,_receiver,_amount,_txProgress);
+
+    } 
 }
