@@ -1,30 +1,54 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity 0.8.17;
+pragma solidity 0.8.6;
+import {LibDiamond} from "../libraries/LibDiamond.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
 
 contract multisigFacet {
-
-
-    function initialize(address _owner1,address owner2) external {
+    function initialize(address owner1, address owner2) external {
         LibDiamond.enforceIsContractOwner();
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        ds.admin = _msgSender();
+        ds.admin = msg.sender;
         ds.counter = 0;
         ds.owners[owner1] = true;
         ds.owners[owner2] = true;
     }
 
-    modifier approvedOnly {
+    modifier approvedOnly() {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        if(!ds.owners[msg.sender]) revert();
+        if (!ds.owners[msg.sender]) revert();
         _;
     }
 
     function setAcceptedToken(address _tokenAddress) external approvedOnly {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        if(_tokenAddress == address(0)) revert();
-        ds.acceptedTokens[_tokenAddress] =true;
+        if (_tokenAddress == address(0)) revert();
+        ds.acceptedTokens[_tokenAddress] = true;
+        ds.token = IERC20(_tokenAddress);
     }
-    function depositFunds(address _token, uint amount) external {
-        
+
+    function depositFunds(uint amount) external {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        if(ds.token.balanceOf(msg.sender)< amount || ds.token.allowance(msg.sender,address(this))<amount) revert();
+        ds.token.transfer(address(this),amount);
+    }
+
+    function initiateWithdrawal(
+        address _receiver,
+        uint _amount
+    ) external approvedOnly {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        uint w_id = ++ds.counter;
+        LibDiamond.TxDetails storage txDetails = ds.transactionDetails[w_id];
+        txDetails.sender = msg.sender;
+        txDetails.receiver = _receiver;
+        txDetails.amount = _amount;
+    }
+
+    function approveWithdrawal() external approvedOnly {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        uint w_id = ds.counter;
+        LibDiamond.TxDetails storage txDetails = ds.transactionDetails[w_id];
+        if (msg.sender == txDetails.sender) revert();
+        txDetails.approver = msg.sender;
     }
 }
